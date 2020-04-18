@@ -1,0 +1,16 @@
+{
+    "parserOptions": {
+        "ecmaVersion": 2020,
+        "sourceType": "module",
+        "ecmaFeatures": {
+            "jsx": true
+        }
+    },
+    "rules": {
+        "semi": "error"
+    },
+    "env": {
+        "browser": true,
+        "node": true
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "name": "prehubclient",
+    "version": "0.1.0",
+    "description": "Mqtt PreHub client",
+    "main": "prehubClient.js",
+    "scripts": {
+        "test": "test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/smacken/node-prehubclient.git"
+    },
+    "keywords": [
+        "mqtt",
+        "prehub"
+    ],
+    "author": "smacken",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/smacken/node-prehubclient/issues"
+    },
+    "homepage": "https://github.com/smacken/node-prehubclient#readme",
+    "dependencies": {
+        "@types/node": "^13.13.0",
+        "async-mqtt": "^2.5.0",
+        "mqtt": "^3.0.0"
+    }
+}
