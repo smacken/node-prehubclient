@@ -1,10 +1,14 @@
 {
-    "name": "prehubclient",
+    "name": "node-prehubclient",
     "version": "0.1.0",
     "description": "Mqtt PreHub client",
     "main": "prehubClient.js",
     "scripts": {
-        "test": "test"
+        "clean": "rimraf *.js *.js.map",
+        "build": "tsc",
+        "start": "npm-run-all clean --parallel watch:build --print-label",
+        "watch:build": "tsc --watch",
+        "test": "mocha"
     },
     "repository": {
         "type": "git",
@@ -21,8 +25,15 @@
     },
     "homepage": "https://github.com/smacken/node-prehubclient#readme",
     "dependencies": {
-        "@types/node": "^13.13.0",
         "async-mqtt": "^2.5.0",
-        "mqtt": "^3.0.0"
+        "mqtt": "^3.0.0",
+        "mocha": "^7.0.1"
+    },
+    "devDependencies": {
+        "@types/node": "^13.13.0",
+        "@types/mocha": "^7.0.1",
+        "typescript": "^3.7.5",
+        "npm-run-all": "^4.1.5",
+        "rimraf": "^3.0.2"
     }
 }
