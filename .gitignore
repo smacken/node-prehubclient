@@ -33,6 +33,9 @@ bower_components
 build/Release
 **/*.js
 **/*.js.map
+main.ts
+main.js
+main.js.map
 temp
 temp/*.*
 config.dev.json

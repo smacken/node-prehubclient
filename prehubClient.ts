@@ -1,7 +1,7 @@
 import * as mqtt from 'mqtt';
 import { MqttClient, IClientOptions } from 'mqtt';
 
-enum Activity {
+export enum Activity {
     Sense = 0,
     Scan = 1,
     Bind = 2,
@@ -11,7 +11,7 @@ enum Activity {
     Display = 6
 }
 
-enum DeviceStatus {
+export enum DeviceStatus {
     Idle = 0,
     Active = 1
 }
@@ -24,11 +24,11 @@ export interface IDevice {
     id:string;
     name: string;
     activity: Activity;
-    status: DeviceStatus;
-    labels: string[];
-    deviceConfig : Record<string, string>;
-    deviceMetadata: Record<string, string>;
-    payloadMetadata: Record<string, string>;
+    status?: DeviceStatus;
+    labels?: string[];
+    deviceConfig?: Record<string, string>;
+    deviceMetadata?: Record<string, string>;
+    payloadMetadata?: Record<string, string>;
 }
 
 export class PreHubClientBuilder {
@@ -67,12 +67,12 @@ export class PreHubClientBuilder {
 }
 
 export class PreHubClient {
-    client: mqtt.MqttClient;
+    private client: mqtt.MqttClient;
     clientOptions: IClientOptions;
     hubPrefix: string;
     isRegistered: boolean;
     
-    constructor(public prehubBuilder: PreHubClientBuilder, public device: IDevice) {
+    constructor(prehubBuilder: PreHubClientBuilder, public device: IDevice) {
         this.hubPrefix = 'prehub';
         this.clientOptions = prehubBuilder.build();
         const topics: string[] = ['registered', 'activate', 'deactivate', 'payloadmetadata', 'devicemetadata', 'config']
@@ -130,7 +130,7 @@ export class PreHubClient {
           }, 3000);
     }
 
-    updateMeta(metadata: Record<string, string>, isPayloadMeta: boolean = true): void {
+    private updateMeta(metadata: Record<string, string>, isPayloadMeta: boolean = true): void {
         for (let key in metadata) {
             let value: string = metadata[key];
             if (isPayloadMeta){
@@ -141,7 +141,7 @@ export class PreHubClient {
         }
     }
 
-    updateDeviceConfig(config: Record<string, string>){
+    private updateDeviceConfig(config: Record<string, string>){
         for (let key in config){
             this.device.deviceConfig[key] = config[key];
         }
