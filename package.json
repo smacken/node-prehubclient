@@ -15,7 +15,7 @@
         "url": "git://git@github.com/smacken/node-prehubclient.git"
     },
     "publishConfig": {
-        "registry": "https://npm.pkg.github.com/smacken"
+        "registry": "https://registry.npmjs.org"
     },
     "keywords": [
         "mqtt",
