@@ -1,4 +1,3 @@
-// declare function require(name:string);
 import * as mqtt from 'mqtt';
 import { MqttClient, IClientOptions } from 'mqtt';
 
@@ -8,25 +7,28 @@ enum Activity {
     Bind = 2,
     Print = 3,
     Switch = 4,
-    PreHub = 5
+    PreHub = 5,
+    Display = 6
 }
+
 enum DeviceStatus {
     Idle = 0,
     Active = 1
 }
 
-interface Dictionary<T> {
+export interface Dictionary<T> {
     [Key: string]: T;
 }
 
-interface IDevice {
+export interface IDevice {
     id:string;
     name: string;
     activity: Activity;
     status: DeviceStatus;
-    deviceConfig : Dictionary<string>;
-    deviceMetadata: Dictionary<string>;
-    payloadMetadata: Dictionary<string>;
+    labels: string[];
+    deviceConfig : Record<string, string>;
+    deviceMetadata: Record<string, string>;
+    payloadMetadata: Record<string, string>;
 }
 
 export class PreHubClientBuilder {
@@ -39,12 +41,12 @@ export class PreHubClientBuilder {
         };
     }
 
-    host(host:string):PreHubClientBuilder {
+    host(host:string): PreHubClientBuilder {
         this._options.host = host;
         return this;
     }
 
-    port(port:number):PreHubClientBuilder {
+    port(port:number): PreHubClientBuilder {
         this._options.port = port;
         return this;
     }
@@ -73,12 +75,13 @@ export class PreHubClient {
     constructor(public prehubBuilder: PreHubClientBuilder, public device: IDevice) {
         this.hubPrefix = 'prehub';
         this.clientOptions = prehubBuilder.build();
-        const topics = ['registered', 'activate', 'deactivate', 'payloadmetadata', 'devicemetadata', 'config']
+        const topics: string[] = ['registered', 'activate', 'deactivate', 'payloadmetadata', 'devicemetadata', 'config']
         this.client.on('connect', () => {
-            topics.forEach(topic => {
+            topics.forEach((topic: string) => {
                 this.client.subscribe(`prehub/${device.id}/${topic}`);
             });
         });
+        
         this.client.on('message', (topic: string, message: Buffer) => {
             if (topic.indexOf('ping') > -1){
                 this.client.publish(`${device.id}/pingack`, device.id);
@@ -108,14 +111,16 @@ export class PreHubClient {
         })
     }
 
-    connect() {
+    connect(): void {
         try {
             this.client = mqtt.connect(this.clientOptions.host, this.clientOptions)
         } catch (error) {
             console.error(error);
         }
     }
-    register() {
+
+    register(): void {
+        if (!this.client.connected) return;
         this.client.publish('prehub/register', JSON.stringify(this.device));
         let n: number;
         n = <any>setTimeout(function () { 
@@ -125,9 +130,9 @@ export class PreHubClient {
           }, 3000);
     }
 
-    updateMeta(metadata: Dictionary<string>, isPayloadMeta: boolean = true): void {
+    updateMeta(metadata: Record<string, string>, isPayloadMeta: boolean = true): void {
         for (let key in metadata) {
-            let value = metadata[key];
+            let value: string = metadata[key];
             if (isPayloadMeta){
                 this.device.payloadMetadata[key] = value;
             } else {
@@ -136,7 +141,7 @@ export class PreHubClient {
         }
     }
 
-    updateDeviceConfig(config: Dictionary<string>){
+    updateDeviceConfig(config: Record<string, string>){
         for (let key in config){
             this.device.deviceConfig[key] = config[key];
         }
