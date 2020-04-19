@@ -12,7 +12,10 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+ssh://git@github.com/smacken/node-prehubclient.git"
+        "url": "git://git@github.com/smacken/node-prehubclient.git"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com/smacken"
     },
     "keywords": [
         "mqtt",
