@@ -37,8 +37,13 @@ export class PreHubClientBuilder {
     constructor(){
         this._options = {
             host: 'localhost',
-            port: 1883
+            port: 1883,
+            protocolId: 'MQTT',
+            protocolVersion: 5,
+            connectTimeout: 1000,
+            clean: true
         };
+        this._options.protocol = 'mqtt';
     }
 
     host(host:string): PreHubClientBuilder {
@@ -68,66 +73,87 @@ export class PreHubClientBuilder {
 
 export class PreHubClient {
     private client: mqtt.MqttClient;
+    private topics: string[] = ['registered', 'activate', 'deactivate', 'payloadmetadata', 'devicemetadata', 'config'];
     clientOptions: IClientOptions;
     hubPrefix: string;
     isRegistered: boolean;
+
     
     constructor(prehubBuilder: PreHubClientBuilder, public device: IDevice) {
         this.hubPrefix = 'prehub';
         this.clientOptions = prehubBuilder.build();
-        const topics: string[] = ['registered', 'activate', 'deactivate', 'payloadmetadata', 'devicemetadata', 'config']
-        this.client.on('connect', () => {
-            topics.forEach((topic: string) => {
-                this.client.subscribe(`prehub/${device.id}/${topic}`);
-            });
-        });
-        
-        this.client.on('message', (topic: string, message: Buffer) => {
-            if (topic.indexOf('ping') > -1){
-                this.client.publish(`${device.id}/pingack`, device.id);
-            }
-
-            if (topic.indexOf('activate') > -1 && device.status == DeviceStatus.Idle){
-                device.status = DeviceStatus.Active;
-                console.log('activated');
-            }
-
-            if (topic.indexOf('deactivate') > -1 && device.status == DeviceStatus.Active){
-                device.status = DeviceStatus.Idle;
-                console.log('deactivated');
-            }
-
-            if (topic.indexOf('registerack') > -1){
-                this.isRegistered = true;
-            }
-
-            if (topic.indexOf('payloadmetadata')){
-                this.updateMeta(JSON.parse(message.toString()));
-            }
-
-            if (topic.indexOf('devicemetadata')){
-                this.updateMeta(JSON.parse(message.toString()), false);
-            }
-        })
+        if (!device.status) device.status = DeviceStatus.Idle;
     }
 
     connect(): void {
+        const prehub = this;
         try {
-            this.client = mqtt.connect(this.clientOptions.host, this.clientOptions)
+            prehub.client = mqtt.connect(this.clientOptions.host, this.clientOptions)
         } catch (error) {
             console.error(error);
+            throw error;
         }
+
+        prehub.client.on('connect', function() {
+            prehub.topics.forEach((topic: string) => {
+                prehub.client.subscribe(`prehub/${prehub.device.id}/${topic}`);
+            });
+        });
+        
+        prehub.client.on('message', function(topic:string, message:Buffer){
+            prehub.onClientMessage(topic, message);
+        });
+    }
+
+    disconnect(): void {
+        const prehub = this;
+        prehub.topics.forEach((topic: string) => {
+            prehub.client.unsubscribe(`prehub/${prehub.device.id}/${topic}`);
+        });
+        prehub.client.end();
     }
 
     register(): void {
-        if (!this.client.connected) return;
-        this.client.publish('prehub/register', JSON.stringify(this.device));
+        // if (!this.client.connected) return;
+        console.log('registering..');
+        const prehub = this;
+        prehub.client.publish('prehub/register', JSON.stringify(prehub.device));
         let n: number;
         n = <any>setTimeout(function () { 
-            if (!this.isRegistered) {
-                this.register();
+            if (!prehub.isRegistered) {
+                prehub.register();
             }
           }, 3000);
+    }
+
+    private onClientMessage(topic: string, message: Buffer) {
+        const prehub = this;
+        if (topic.indexOf('ping') > -1){
+            prehub.client.publish(`${prehub.device.id}/pingack`, prehub.device.id);
+        }
+
+        if (topic.indexOf('activate') > -1 && prehub.device.status == DeviceStatus.Idle){
+            prehub.device.status = DeviceStatus.Active;
+            prehub.isRegistered = true;
+            console.log('activated');
+        }
+
+        if (topic.indexOf('deactivate') > -1 && prehub.device.status == DeviceStatus.Active){
+            prehub.device.status = DeviceStatus.Idle;
+            console.log('deactivated');
+        }
+
+        if (topic.indexOf('registerack') > -1){
+            prehub.isRegistered = true;
+        }
+
+        if (topic.indexOf('payloadmetadata') > -1){
+            prehub.updateMeta(JSON.parse(message.toString()));
+        }
+
+        if (topic.indexOf('devicemetadata') > -1){
+            prehub.updateMeta(JSON.parse(message.toString()), false);
+        }
     }
 
     private updateMeta(metadata: Record<string, string>, isPayloadMeta: boolean = true): void {
